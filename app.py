@@ -1,85 +1,122 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
+import plotly.express as px
 import joblib
 
-# --- 1. LOAD ARTIFACTS (Model dan Scaler) ---
+# --- 1. CONFIG ---
+st.set_page_config(
+    page_title="Analisis Kerentanan Jabar",
+    page_icon="🛡️",
+    layout="wide"
+)
+
+# --- 2. CSS ADAPTIF ---
+st.markdown("""
+    <style>
+    .stMetric {
+        border-radius: 10px;
+        padding: 15px;
+        border: 1px solid rgba(128, 128, 128, 0.2);
+    }
+    .stButton>button {
+        width: 100%;
+        border-radius: 8px;
+        background-color: #2563eb;
+        color: white;
+    }
+    /* Warna kustom untuk info box agar konsisten */
+    .blue-box { background-color: #e3f2fd; padding: 20px; border-radius: 10px; border-left: 5px solid #2196f3; color: #0d47a1; }
+    .orange-box { background-color: #fff3e0; padding: 20px; border-radius: 10px; border-left: 5px solid #ff9800; color: #e65100; }
+    .red-box { background-color: #ffebee; padding: 20px; border-radius: 10px; border-left: 5px solid #f44336; color: #b71c1c; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- 3. LOAD DATA & MODELS ---
+@st.cache_data
+def get_data():
+    try:
+        data = pd.read_csv('dataset_final_label.csv')
+        if data['harga_cabai'].dtype == 'object':
+            data['harga_cabai'] = data['harga_cabai'].str.replace('.', '', regex=False).astype(float)
+        return data
+    except:
+        return None
+
+df = get_data()
+# Memastikan file joblib ada
 try:
-    # Memuat objek Standard Scaler (Wajib untuk menstandardisasi input pengguna)
     scaler = joblib.load('scaler_final.joblib')
-    # Memuat model KNN terbaik (Model Klasifikasi)
     model = joblib.load('knn_final_model.joblib')
-except FileNotFoundError:
-    st.error("Error: File model atau scaler (.joblib) tidak ditemukan. Pastikan file berada di folder yang sama.")
-    st.stop()
+except:
+    st.error("File model atau scaler tidak ditemukan!")
 
-# --- 2. DEFINISI GLOBAL ---
-# Fitur yang digunakan (Sesuai dengan urutan saat pelatihan model)
-FEATURES = ['harga_cabai', 'gkg', 'kemiskinan', 'stunting', 'air_bersih']
-# Peta label terbalik (Sesuai dengan encoding saat pelatihan: 0=Aman, 1=Rentan, 2=Rawan)
-LABEL_MAP = {0: 'Aman', 1: 'Rentan', 2: 'Rawan'}
-
-# --- 3. FUNGSI PREDIKSI ---
-def predict_kerentanan(input_data):
-    """Membuat prediksi label kerentanan dari input data."""
-    
-    # Konversi input ke DataFrame
-    input_df = pd.DataFrame([input_data], columns=FEATURES)
-    
-    # 1. Standardisasi Input (Wajib menggunakan scaler yang sudah dilatih)
-    input_scaled = scaler.transform(input_df)
-    
-    # 2. Prediksi Model
-    prediction_numeric = model.predict(input_scaled)[0]
-    
-    # 3. Konversi hasil numerik ke label teks
-    prediction_label = LABEL_MAP.get(prediction_numeric, "Label Tidak Dikenal")
-    
-    return prediction_label
-
-# --- 4. TAMPILAN APLIKASI STREAMLIT ---
-st.set_page_config(page_title="Prediksi Kerentanan Regional", layout="centered")
-
-st.title("Sistem Prediksi Daerah Rawan Pangan")
-st.subheader("Berdasarkan Model Klasifikasi KNN")
-st.markdown("Masukkan indikator sosial-ekonomi dan harga komoditas untuk memprediksi tingkat kerentanan suatu wilayah.")
-
-# Kolom Input dari Pengguna
-st.header("Input Indikator Wilayah")
-
-# Input dalam kolom untuk tampilan yang lebih rapi
-col1, col2 = st.columns(2)
-
-# Kolom 1
-with col1:
-    harga_cabai = st.number_input("1. Harga Cabai Rata-rata (Rp.)", min_value=100000.0, max_value=20000000.0, value=3500000.0, step=100000.0)
-    gkg = st.number_input("2. GKG (Gabah Kering Giling)", min_value=500.0, max_value=800.0, value=650.0, step=1.0)
-    kemiskinan = st.number_input("3. Persentase Kemiskinan (%)", min_value=1.0, max_value=20.0, value=9.5, step=0.1)
-
-# Kolom 2
-with col2:
-    stunting = st.number_input("4. Persentase Stunting (%)", min_value=5.0, max_value=35.0, value=25.0, step=0.1)
-    air_bersih = st.number_input("5. Akses Air Bersih (%)", min_value=70.0, max_value=100.0, value=90.0, step=0.1)
-
-# Tombol Prediksi
-if st.button("Prediksi Tingkat Kerentanan"):
-    # Kumpulkan semua input
-    input_data = [harga_cabai, gkg, kemiskinan, stunting, air_bersih]
-    
-    # Lakukan prediksi
-    result_label = predict_kerentanan(input_data)
-    
+# --- 4. SIDEBAR NAVIGATION ---
+with st.sidebar:
+    st.title("🛡️ Navigator")
+    menu = st.radio("Pilih Menu:", ["🏠 Beranda", "📊 Visualisasi", "🔮 Prediksi"])
     st.markdown("---")
-    st.header("Hasil Prediksi")
+
+# --- 5. LOGIKA HALAMAN ---
+
+if menu == "🏠 Beranda":
+    st.title("Sistem Analisis Kerentanan Wilayah")
+    st.subheader("Tentang Dataset")
+    st.markdown("""
+    Dataset ini berisi indikator ekonomi dan sosial dari berbagai Kabupaten/Kota di Jawa Barat. 
+    Tujuannya adalah mengklasifikasikan wilayah ke dalam status **Aman, Rentan, atau Rawan**.
+    """)
     
-    # Logika Tampilan Hasil (Feedback instan)
-    if result_label == 'Aman':
-        st.success(f"Wilayah ini diprediksi berada dalam kategori **{result_label}**.")
-        st.balloons()
-        st.write("Indikator menunjukkan risiko kerentanan yang sangat rendah, mirip dengan Ciamis.")
-    elif result_label == 'Rentan':
-        st.warning(f"Wilayah ini diprediksi berada dalam kategori **{result_label}**.")
-        st.write("Perlu pemantauan, terdapat beberapa indikator di batas rata-rata. Wilayah ini adalah mayoritas klaster.")
-    elif result_label == 'Rawan':
-        st.error(f"Wilayah ini diprediksi berada dalam kategori **{result_label}**.")
-        st.write("Wilayah ini membutuhkan intervensi segera. Indikatornya serupa dengan Bogor, Sukabumi, dan Garut.")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.info("**Fitur Ekonomi:**\n- Harga Cabai\n- Produksi GKG")
+    with col2:
+        st.info("**Fitur Sosial:**\n- Kemiskinan\n- Stunting\n- Air Bersih")
+
+elif menu == "📊 Visualisasi":
+    st.title("📊 Eksplorasi Data")
+    
+    c1, c2 = st.columns([1, 1.5])
+    with c1:
+        st.write("### Sebaran Label")
+        # Mengatur warna pie chart agar sesuai: Aman (Blue), Rentan (Orange), Rawan (Red)
+        fig_pie = px.pie(df, names='Label', hole=0.4, 
+                         color='Label',
+                         color_discrete_map={'Aman':'blue', 'Rentan':'orange', 'Rawan':'red'})
+        st.plotly_chart(fig_pie, use_container_width=True)
+    
+    with c2:
+        st.write("### Detail Data")
+        st.dataframe(df, use_container_width=True)
+
+elif menu == "🔮 Prediksi":
+    st.title("🔮 Kalkulator Klasifikasi")
+    
+    with st.container():
+        c1, c2 = st.columns(2)
+        with c1:
+            h_cabai = st.number_input("Harga Cabai", value=3500000)
+            v_gkg = st.number_input("GKG", value=636.0)
+            v_miskin = st.number_input("Kemiskinan (%)", value=9.5)
+        with c2:
+            v_stunting = st.number_input("Stunting (%)", value=24.5)
+            v_air = st.number_input("Air Bersih (%)", value=90.0)
+        
+        if st.button("🚀 Jalankan Prediksi"):
+            input_df = pd.DataFrame([[h_cabai, v_gkg, v_miskin, v_stunting, v_air]], 
+                                     columns=['harga_cabai', 'gkg', 'kemiskinan', 'stunting', 'air_bersih'])
+            scaled = scaler.transform(input_df)
+            res = model.predict(scaled)[0]
+            
+            label_map = {0: 'Aman', 1: 'Rentan', 2: 'Rawan'}
+            hasil = label_map[res]
+            
+            st.divider()
+            
+            # Pengkondisian warna output sesuai permintaan
+            if hasil == 'Aman':
+                st.markdown(f'<div class="blue-box"><h3>Hasil: {hasil}</h3> Wilayah cenderung stabil dan memiliki ketahanan pangan yang baik.</div>', unsafe_allow_html=True)
+                st.balloons()
+            elif hasil == 'Rentan':
+                st.markdown(f'<div class="orange-box"><h3>Hasil: {hasil}</h3> Wilayah memerlukan pengawasan berkala terhadap indikator sosial-ekonomi.</div>', unsafe_allow_html=True)
+            elif hasil == 'Rawan':
+                st.markdown(f'<div class="red-box"><h3>Hasil: {hasil}</h3> Wilayah memerlukan intervensi kebijakan segera untuk mencegah krisis.</div>', unsafe_allow_html=True)
