@@ -3,35 +3,68 @@ import pandas as pd
 import plotly.express as px
 import joblib
 
-# --- 1. CONFIG ---
 st.set_page_config(
     page_title="Analisis Kerentanan Jabar",
-    page_icon="🛡️",
     layout="wide"
 )
 
-# --- 2. CSS ADAPTIF ---
+
+# --- 2. CSS ADAPTIF (Responsive & Mobile Friendly) ---
 st.markdown("""
     <style>
-    .stMetric {
-        border-radius: 10px;
-        padding: 15px;
-        border: 1px solid rgba(128, 128, 128, 0.2);
+    /* Mengatur kontainer utama agar nyaman di HP */
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
+
+    /* Mengatur Box Hasil agar responsif */
+    .result-box {
+        padding: 1.5rem; 
+        border-radius: 12px; 
+        border-left: 8px solid;
+        margin-bottom: 1rem;
+        width: 100%; /* Memastikan lebar penuh di HP */
+        box-sizing: border-box;
+    }
+    
+    .blue-box { 
+        background-color: #e3f2fd; 
+        border-color: #2196f3; 
+        color: #0d47a1; 
+    }
+    .orange-box { 
+        background-color: #fff3e0; 
+        border-color: #ff9800; 
+        color: #e65100; 
+    }
+    .red-box { 
+        background-color: #ffebee; 
+        border-color: #f44336; 
+        color: #b71c1c; 
+    }
+
+    /* Memperbaiki ukuran teks di HP */
+    @media (max-width: 640px) {
+        h3 {
+            font-size: 1.2rem !important;
+        }
+        .result-box {
+            padding: 1rem;
+        }
+    }
+    
     .stButton>button {
         width: 100%;
         border-radius: 8px;
         background-color: #2563eb;
         color: white;
+        height: 3rem;
     }
-    /* Warna kustom untuk info box agar konsisten */
-    .blue-box { background-color: #e3f2fd; padding: 20px; border-radius: 10px; border-left: 5px solid #2196f3; color: #0d47a1; }
-    .orange-box { background-color: #fff3e0; padding: 20px; border-radius: 10px; border-left: 5px solid #ff9800; color: #e65100; }
-    .red-box { background-color: #ffebee; padding: 20px; border-radius: 10px; border-left: 5px solid #f44336; color: #b71c1c; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. LOAD DATA & MODELS ---
+
 @st.cache_data
 def get_data():
     try:
@@ -43,7 +76,7 @@ def get_data():
         return None
 
 df = get_data()
-# Memastikan file joblib ada
+
 try:
     scaler = joblib.load('scaler_final.joblib')
     model = joblib.load('knn_final_model.joblib')
