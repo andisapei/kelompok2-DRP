@@ -85,13 +85,13 @@ except:
 
 # --- 4. SIDEBAR NAVIGATION ---
 with st.sidebar:
-    st.title("🛡️ Navigator")
-    menu = st.radio("Pilih Menu:", ["🏠 Beranda", "📊 Visualisasi", "🔮 Prediksi"])
+    st.title("Navigator")
+    menu = st.radio("Pilih Menu:", ["Beranda", "Visualisasi", "Prediksi"])
     st.markdown("---")
 
 # --- 5. LOGIKA HALAMAN ---
 
-if menu == "🏠 Beranda":
+if menu == "Beranda":
     st.title("Sistem Analisis Kerentanan Wilayah")
     st.subheader("Tentang Dataset")
     st.markdown("""
@@ -105,13 +105,12 @@ if menu == "🏠 Beranda":
     with col2:
         st.info("**Fitur Sosial:**\n- Kemiskinan\n- Stunting\n- Air Bersih")
 
-elif menu == "📊 Visualisasi":
+elif menu == "Visualisasi":
     st.title("📊 Eksplorasi Data")
     
     c1, c2 = st.columns([1, 1.5])
     with c1:
         st.write("### Sebaran Label")
-        # Mengatur warna pie chart agar sesuai: Aman (Blue), Rentan (Orange), Rawan (Red)
         fig_pie = px.pie(df, names='Label', hole=0.4, 
                          color='Label',
                          color_discrete_map={'Aman':'blue', 'Rentan':'orange', 'Rawan':'red'})
@@ -121,8 +120,8 @@ elif menu == "📊 Visualisasi":
         st.write("### Detail Data")
         st.dataframe(df, use_container_width=True)
 
-elif menu == "🔮 Prediksi":
-    st.title("🔮 Kalkulator Klasifikasi")
+elif menu == "Prediksi":
+    st.title("🔮 Klasifikasi")
     
     with st.container():
         c1, c2 = st.columns(2)
@@ -134,7 +133,7 @@ elif menu == "🔮 Prediksi":
             v_stunting = st.number_input("Stunting (%)", value=24.5)
             v_air = st.number_input("Air Bersih (%)", value=90.0)
         
-        if st.button("🚀 Jalankan Prediksi"):
+        if st.button("Jalankan Prediksi"):
             input_df = pd.DataFrame([[h_cabai, v_gkg, v_miskin, v_stunting, v_air]], 
                                      columns=['harga_cabai', 'gkg', 'kemiskinan', 'stunting', 'air_bersih'])
             scaled = scaler.transform(input_df)
@@ -145,7 +144,6 @@ elif menu == "🔮 Prediksi":
             
             st.divider()
             
-            # Pengkondisian warna output sesuai permintaan
             if hasil == 'Aman':
                 st.markdown(f'<div class="blue-box"><h3>Hasil: {hasil}</h3> Wilayah cenderung stabil dan memiliki ketahanan pangan yang baik.</div>', unsafe_allow_html=True)
                 st.balloons()
